@@ -20,7 +20,7 @@
                 <label for="user_id" class="form-label">User</label>
                 <select name="user_id" id="user_id" required @disabled($users->isEmpty())
                         class="form-control @error('user_id') form-control-invalid @enderror">
-                    <option value="" disabled {{ old('user_id') ? '' : 'selected' }}>Select user…</option>
+                    <option value="" disabled @selected(! old('user_id'))>Select User</option>
                     @foreach ($users as $user)
                         <option value="{{ $user->id }}" @selected((string) old('user_id') === (string) $user->id)>{{ $user->name }}</option>
                     @endforeach
@@ -31,7 +31,7 @@
             </div>
             <div>
                 <label for="date" class="form-label">Date</label>
-                <input type="date" name="date" id="date" value="{{ old('date', now()->toDateString()) }}" required
+                <input type="date" name="date" id="date" value="{{ old('date') }}" required
                        class="form-control @error('date') form-control-invalid @enderror">
                 @error('date')
                     <p class="form-error">{{ $message }}</p>

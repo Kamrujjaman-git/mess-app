@@ -22,7 +22,7 @@
             <div class="overflow-x-auto">
                 <table class="min-w-full border-collapse text-left text-sm text-slate-700">
                     <thead>
-                        <tr class="border-b border-slate-200 bg-slate-50/95">
+                        <tr class="border-b border-slate-200 bg-gray-100">
                             <th scope="col" class="whitespace-nowrap px-6 py-5 text-xs font-semibold uppercase tracking-wider text-slate-500">User</th>
                             <th scope="col" class="whitespace-nowrap px-6 py-5 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">Amount</th>
                             <th scope="col" class="whitespace-nowrap px-6 py-5 text-xs font-semibold uppercase tracking-wider text-slate-500">Date</th>

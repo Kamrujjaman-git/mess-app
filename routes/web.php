@@ -20,5 +20,7 @@ Route::resource('expenses', MarketExpenseController::class)
 Route::resource('meals', MealController::class);
 Route::resource('advance-payments', AdvancePaymentController::class);
 
-Route::resource('house-rents', HouseRentController::class)->only(['index', 'create', 'store']);
-Route::resource('maid-bills', MaidBillController::class)->only(['index', 'create', 'store']);
+Route::resource('house-rents', HouseRentController::class)
+    ->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);
+Route::resource('maid-bills', MaidBillController::class)
+    ->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);

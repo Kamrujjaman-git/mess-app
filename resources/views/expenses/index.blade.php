@@ -7,7 +7,7 @@
         <div class="min-w-0 flex-1 sm:max-w-xs">
             <label for="expenses-month" class="block text-xs font-semibold uppercase tracking-wider text-slate-500">Month</label>
             <input type="month" name="month" id="expenses-month" value="{{ request('month', date('Y-m')) }}"
-                   class="mt-2 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm transition hover:border-slate-300 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+                   class="mt-2 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm transition hover:border-slate-300 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
         </div>
         <button type="submit" class="btn-filter">
             <svg class="btn-filter-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -36,7 +36,7 @@
             <div class="overflow-x-auto">
                 <table class="min-w-full border-collapse text-left text-sm text-slate-700">
                     <thead>
-                        <tr class="border-b border-slate-200 bg-slate-50/95">
+                        <tr class="border-b border-slate-200 bg-gray-100">
                             <th scope="col" class="whitespace-nowrap px-6 py-5 text-xs font-semibold uppercase tracking-wider text-slate-500">Date</th>
                             <th scope="col" class="whitespace-nowrap px-6 py-5 text-xs font-semibold uppercase tracking-wider text-slate-500">User</th>
                             <th scope="col" class="whitespace-nowrap px-6 py-5 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">Amount</th>

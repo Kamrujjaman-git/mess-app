@@ -2,21 +2,29 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\HandlesControllerErrors;
 use App\Models\Meal;
 use App\Models\User;
+use App\Support\Month;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use Throwable;
 
 class MealController extends Controller
 {
+    use HandlesControllerErrors;
+
     public function create(): View
     {
-        return view('meals.create', [
-            'users' => User::query()->orderBy('name')->get(),
-        ]);
+        $users = User::query()->orderBy('name')->get();
+        if ($users->isEmpty()) {
+            $this->logMissingData('meals.create_missing_users');
+        }
+
+        return view('meals.create', ['users' => $users]);
     }
 
     public function edit(Meal $meal): View
@@ -32,36 +40,31 @@ class MealController extends Controller
      */
     public function index(Request $request): JsonResponse|View
     {
-        $month = $request->input('month', date('Y-m'));
+        try {
+            [$month, $year, $monthNum] = Month::normalize($request->input('month'));
 
-        if (! is_string($month) || ! preg_match('/^\d{4}-\d{2}$/', $month)) {
-            $month = date('Y-m');
+            $meals = Meal::query()
+                ->with('user')
+                ->forMonth($year, $monthNum)
+                ->orderByDesc('date')
+                ->orderByDesc('id')
+                ->get();
+
+            if ($request->wantsJson()) {
+                return response()->json($meals);
+            }
+
+            return view('meals.index', [
+                'meals' => $meals,
+                'month' => $month,
+                'monthLabel' => date('F Y', strtotime($month.'-01')),
+            ]);
+        } catch (Throwable $e) {
+            $this->logControllerError($e, 'meals.index_failed', [
+                'month' => $request->input('month'),
+            ]);
+            return $this->errorResponse($request, 'meals.index');
         }
-
-        [$year, $monthNum] = array_map('intval', explode('-', $month, 2));
-        if (! checkdate($monthNum, 1, $year)) {
-            $month = date('Y-m');
-        }
-
-        $start = $month.'-01';
-        $end = date('Y-m-t', strtotime($start));
-
-        $meals = Meal::query()
-            ->with('user')
-            ->whereBetween('date', [$start, $end])
-            ->orderByDesc('date')
-            ->orderByDesc('id')
-            ->get();
-
-        if ($request->wantsJson()) {
-            return response()->json($meals);
-        }
-
-        return view('meals.index', [
-            'meals' => $meals,
-            'month' => $month,
-            'monthLabel' => date('F Y', strtotime($start)),
-        ]);
     }
 
     /**
@@ -69,33 +72,40 @@ class MealController extends Controller
      */
     public function store(Request $request): JsonResponse|RedirectResponse
     {
-        $validated = $request->validate([
-            'user_id' => [
-                'required',
-                'integer',
-                'exists:users,id',
-                Rule::unique('meals', 'user_id')->where(
-                    fn ($query) => $query->where('date', $request->input('date'))
-                ),
-            ],
-            'date' => ['required', 'date'],
-            'lunch' => ['sometimes', 'boolean'],
-            'dinner' => ['sometimes', 'boolean'],
-        ]);
+        try {
+            $request->validate([
+                'user_id' => [
+                    'required',
+                    'exists:users,id',
+                    Rule::unique('meals', 'user_id')->where(
+                        fn ($query) => $query->whereDate('date', $request->input('date'))
+                    ),
+                ],
+                'date' => ['required', 'date_format:Y-m-d'],
+                'lunch' => ['sometimes', 'boolean'],
+                'dinner' => ['sometimes', 'boolean'],
+            ]);
 
-        $meal = Meal::create([
-            'user_id' => $validated['user_id'],
-            'date' => $validated['date'],
-            'lunch' => $request->boolean('lunch'),
-            'dinner' => $request->boolean('dinner'),
-        ]);
-        $meal->load('user');
+            $meal = Meal::create([
+                'user_id' => $request->user_id,
+                'date' => $request->date,
+                'lunch' => $request->boolean('lunch'),
+                'dinner' => $request->boolean('dinner'),
+            ]);
+            $meal->load('user');
 
-        if ($request->wantsJson()) {
-            return response()->json($meal, 201);
+            if ($request->wantsJson()) {
+                return response()->json($meal, 201);
+            }
+
+            return redirect()->route('dashboard')->with('success', 'Meal entry saved successfully.');
+        } catch (Throwable $e) {
+            $this->logControllerError($e, 'meals.insert_failed', [
+                'user_id' => $request->input('user_id'),
+                'date' => $request->input('date'),
+            ]);
+            return $this->errorResponse($request, 'meals.index');
         }
-
-        return redirect()->route('dashboard')->with('success', 'Meal entry saved successfully.');
     }
 
     /**
@@ -113,33 +123,40 @@ class MealController extends Controller
      */
     public function update(Request $request, Meal $meal): JsonResponse|RedirectResponse
     {
-        $validated = $request->validate([
-            'user_id' => [
-                'required',
-                'integer',
-                'exists:users,id',
-                Rule::unique('meals', 'user_id')->where(
-                    fn ($query) => $query->where('date', $request->input('date'))
-                )->ignore($meal->id),
-            ],
-            'date' => ['required', 'date'],
-            'lunch' => ['sometimes', 'boolean'],
-            'dinner' => ['sometimes', 'boolean'],
-        ]);
+        try {
+            $validated = $request->validate([
+                'user_id' => [
+                    'required',
+                    'integer',
+                    'exists:users,id',
+                    Rule::unique('meals', 'user_id')->where(
+                        fn ($query) => $query->whereDate('date', $request->input('date'))
+                    )->ignore($meal->id),
+                ],
+                'date' => ['required', 'date_format:Y-m-d'],
+                'lunch' => ['sometimes', 'boolean'],
+                'dinner' => ['sometimes', 'boolean'],
+            ]);
 
-        $meal->update([
-            'user_id' => $validated['user_id'],
-            'date' => $validated['date'],
-            'lunch' => $request->boolean('lunch'),
-            'dinner' => $request->boolean('dinner'),
-        ]);
-        $meal->load('user');
+            $meal->update([
+                'user_id' => $validated['user_id'],
+                'date' => $validated['date'],
+                'lunch' => $request->boolean('lunch'),
+                'dinner' => $request->boolean('dinner'),
+            ]);
+            $meal->load('user');
 
-        if ($request->wantsJson()) {
-            return response()->json($meal->fresh(['user']));
+            if ($request->wantsJson()) {
+                return response()->json($meal->fresh(['user']));
+            }
+
+            return redirect()->route('meals.index')->with('success', 'Meal updated successfully.');
+        } catch (Throwable $e) {
+            $this->logControllerError($e, 'meals.update_failed', [
+                'id' => $meal->id,
+            ]);
+            return $this->errorResponse($request, 'meals.index');
         }
-
-        return redirect()->route('meals.index')->with('success', 'Meal updated successfully.');
     }
 
     /**
@@ -147,12 +164,19 @@ class MealController extends Controller
      */
     public function destroy(Request $request, Meal $meal): JsonResponse|RedirectResponse
     {
-        $meal->delete();
+        try {
+            $meal->delete();
 
-        if ($request->wantsJson()) {
-            return response()->json(null, 204);
+            if ($request->wantsJson()) {
+                return response()->json(null, 204);
+            }
+
+            return redirect()->route('meals.index')->with('success', 'Meal deleted successfully.');
+        } catch (Throwable $e) {
+            $this->logControllerError($e, 'meals.delete_failed', [
+                'id' => $meal->id,
+            ]);
+            return $this->errorResponse($request, 'meals.index');
         }
-
-        return redirect()->route('meals.index')->with('success', 'Meal deleted successfully.');
     }
 }

@@ -43,23 +43,48 @@
             <div class="overflow-x-auto">
                 <table class="min-w-full border-collapse text-left text-sm text-slate-700">
                     <thead>
-                        <tr class="border-b border-slate-200 bg-slate-50/95">
+                        <tr class="border-b border-slate-200 bg-gray-100">
                             <th scope="col" class="whitespace-nowrap px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">User</th>
                             <th scope="col" class="whitespace-nowrap px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">Amount</th>
                             <th scope="col" class="whitespace-nowrap px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">Month</th>
                             <th scope="col" class="whitespace-nowrap px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">Note</th>
+                            <th scope="col" class="whitespace-nowrap px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-200 bg-white">
                         @foreach ($maidBills as $bill)
                             <tr class="table-row-interactive">
                                 <th scope="row" class="px-6 py-4 font-medium text-slate-900">{{ $bill->user->name }}</th>
-                                <td class="px-6 py-4 text-right tabular-nums text-slate-900">{{ number_format((float) $bill->amount, 2) }}</td>
+                                <td class="px-6 py-4 text-right tabular-nums text-slate-900">{{ number_format($bill->amount, 2) }}</td>
                                 <td class="px-6 py-4 tabular-nums text-slate-700">{{ $bill->month }}</td>
                                 <td class="max-w-md px-6 py-4 text-slate-600">{{ $bill->note ? \Illuminate\Support\Str::limit($bill->note, 120) : '—' }}</td>
+                                <td class="whitespace-nowrap px-6 py-4 text-right">
+                                    <div class="flex flex-wrap items-center justify-end gap-3">
+                                        <a href="{{ route('maid-bills.edit', $bill) }}" class="action-link">
+                                            Edit
+                                        </a>
+                                        <form action="{{ route('maid-bills.destroy', $bill) }}" method="post" class="inline"
+                                              onsubmit="return confirm('Delete this maid bill entry? This cannot be undone.');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="action-link-danger cursor-pointer">
+                                                Delete
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
                             </tr>
                         @endforeach
                     </tbody>
+                    <tfoot>
+                        <tr class="bg-gray-100 font-bold">
+                            <td class="px-6 py-4 text-slate-800" colspan="1">Total</td>
+                            <td class="px-6 py-4 text-right tabular-nums text-slate-900">
+                                Total: {{ number_format($totalMaid, 2) }}
+                            </td>
+                            <td class="px-6 py-4" colspan="3"></td>
+                        </tr>
+                    </tfoot>
                 </table>
             </div>
         </div>

@@ -13,10 +13,12 @@ return new class extends Migration
     {
         Schema::create('advance_payments', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->decimal('amount', 12, 2);
+            $table->unsignedBigInteger('user_id');
+            $table->decimal('amount', 10, 2);
             $table->date('date');
             $table->timestamps();
+
+            $table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete();
         });
     }
 

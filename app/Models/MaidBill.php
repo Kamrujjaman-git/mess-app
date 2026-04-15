@@ -17,15 +17,9 @@ class MaidBill extends Model
         'note',
     ];
 
-    /**
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'amount' => 'decimal:2',
-        ];
-    }
+    protected $casts = [
+        'amount' => 'decimal:2',
+    ];
 
     public function user(): BelongsTo
     {

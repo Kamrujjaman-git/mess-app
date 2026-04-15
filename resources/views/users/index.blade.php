@@ -22,7 +22,7 @@
             <div class="overflow-x-auto">
                 <table class="min-w-full border-collapse text-left text-sm text-slate-700">
                     <thead>
-                        <tr class="border-b border-slate-200 bg-slate-50/95">
+                        <tr class="border-b border-slate-200 bg-gray-100">
                             <th scope="col" class="whitespace-nowrap px-6 py-5 text-xs font-semibold uppercase tracking-wider text-slate-500">Name</th>
                             <th scope="col" class="whitespace-nowrap px-6 py-5 text-xs font-semibold uppercase tracking-wider text-slate-500">Email</th>
                             <th scope="col" class="whitespace-nowrap px-6 py-5 text-xs font-semibold uppercase tracking-wider text-slate-500">Role</th>
@@ -35,7 +35,7 @@
                                 <td class="px-6 py-5 font-medium text-slate-900">{{ $user->name }}</td>
                                 <td class="px-6 py-5 text-slate-600">{{ $user->email }}</td>
                                 <td class="px-6 py-5">
-                                    <span class="inline-flex rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">{{ $user->role }}</span>
+                                    <span class="inline-flex rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">{{ $user->role }}</span>
                                 </td>
                                 <td class="whitespace-nowrap px-6 py-5 text-right">
                                     <div class="flex flex-wrap items-center justify-end gap-3">

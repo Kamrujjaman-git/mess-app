@@ -19,3 +19,14 @@ function initAutoDismissFlash() {
 }
 
 document.addEventListener('DOMContentLoaded', initAutoDismissFlash);
+
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.modal').forEach((modal) => {
+        modal.addEventListener('show.bs.modal', function () {
+            const form = this.querySelector('form');
+            if (form) {
+                form.reset();
+            }
+        });
+    });
+});

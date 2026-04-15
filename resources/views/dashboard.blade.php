@@ -8,7 +8,7 @@
     <div class="min-w-0 flex-1 sm:max-w-xs">
         <label for="dashboard-month" class="block text-xs font-semibold uppercase tracking-wider text-slate-500">Month</label>
         <input type="month" name="month" id="dashboard-month" value="{{ $month }}"
-               class="mt-2 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm transition hover:border-slate-300 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
+               class="mt-2 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm transition hover:border-slate-300 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
     </div>
     <button type="submit" class="btn-filter">
         <svg class="btn-filter-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -25,7 +25,7 @@
             <div>
                 <p class="text-sm font-medium text-slate-500">Total expense</p>
                 <p class="mt-2 text-3xl font-semibold tracking-tight text-slate-900 tabular-nums">
-                    {{ number_format($totalExpense, 2) }}
+                    {{ $totalExpense }}
                 </p>
                 <p class="mt-1 text-xs text-slate-400">Sum of market expenses</p>
             </div>
@@ -62,7 +62,7 @@
                 <p class="text-sm font-medium text-slate-500">Cost per meal</p>
                 <p class="mt-2 text-3xl font-semibold tracking-tight text-slate-900 tabular-nums">
                     @if ($costPerMeal !== null)
-                        {{ number_format($costPerMeal, 2) }}
+                        {{ $costPerMeal }}
                     @else
                         <span class="text-slate-400">—</span>
                     @endif
@@ -78,7 +78,7 @@
     </article>
 </div>
 
-<section class="mt-10" aria-labelledby="dashboard-member-heading">
+<section class="mt-8" aria-labelledby="dashboard-member-heading">
     <h2 id="dashboard-member-heading" class="text-lg font-semibold tracking-tight text-slate-900">Member balances</h2>
     <p class="mt-1 text-sm text-slate-500">
         Totals for <span class="font-medium text-slate-700">{{ $monthLabel }}</span>.
@@ -94,7 +94,7 @@
             <div class="overflow-x-auto">
                 <table class="min-w-full border-collapse text-left text-sm text-slate-700">
                     <thead>
-                        <tr class="border-b border-slate-200 bg-slate-50/95">
+                        <tr class="border-b border-slate-200 bg-gray-100">
                             <th scope="col" class="whitespace-nowrap px-6 py-5 text-xs font-semibold uppercase tracking-wider text-slate-500">User Name</th>
                             <th scope="col" class="whitespace-nowrap px-6 py-5 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">Total Meals</th>
                             <th scope="col" class="whitespace-nowrap px-6 py-5 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">Advance Paid</th>
@@ -105,26 +105,26 @@
                     <tbody class="divide-y divide-slate-200 bg-white">
                         @foreach ($perUserBalances as $row)
                             @php
-                                $bal = (float) $row['balance'];
+                                $balCents = (int) $row['balanceCents'];
                             @endphp
                             <tr class="table-row-interactive">
                                 <td class="px-6 py-5 font-medium text-slate-900">{{ $row['name'] }}</td>
                                 <td class="px-6 py-5 text-right tabular-nums text-slate-600">{{ number_format($row['meals']) }}</td>
-                                <td class="px-6 py-5 text-right tabular-nums text-slate-900">{{ number_format($row['advancePaid'], 2) }}</td>
-                                <td class="px-6 py-5 text-right tabular-nums text-slate-900">{{ number_format($row['cost'], 2) }}</td>
+                                <td class="px-6 py-5 text-right tabular-nums text-slate-900">{{ $row['advancePaid'] }}</td>
+                                <td class="px-6 py-5 text-right tabular-nums text-slate-900">{{ $row['cost'] }}</td>
                                 <td class="px-6 py-5 text-right align-top">
-                                    @if ($bal > 0)
+                                    @if ($balCents > 0)
                                         <div class="ml-auto inline-block rounded-xl bg-emerald-50 px-3 py-2 text-right ring-1 ring-emerald-200/70">
-                                            <div class="tabular-nums text-base font-semibold text-emerald-800">{{ number_format($row['balance'], 2) }}</div>
+                                            <div class="tabular-nums text-base font-semibold text-emerald-800">{{ $row['balance'] }}</div>
                                             <div class="mt-0.5 text-[0.7rem] font-medium uppercase tracking-wide text-emerald-700">Will get money</div>
                                         </div>
-                                    @elseif ($bal < 0)
+                                    @elseif ($balCents < 0)
                                         <div class="ml-auto inline-block rounded-xl bg-red-50 px-3 py-2 text-right ring-1 ring-red-200/70">
-                                            <div class="tabular-nums text-base font-semibold text-red-800">{{ number_format($row['balance'], 2) }}</div>
+                                            <div class="tabular-nums text-base font-semibold text-red-800">{{ $row['balance'] }}</div>
                                             <div class="mt-0.5 text-[0.7rem] font-medium uppercase tracking-wide text-red-700">Needs to pay</div>
                                         </div>
                                     @else
-                                        <span class="tabular-nums font-medium text-slate-600">{{ number_format($row['balance'], 2) }}</span>
+                                        <span class="tabular-nums font-medium text-slate-600">{{ $row['balance'] }}</span>
                                     @endif
                                 </td>
                             </tr>

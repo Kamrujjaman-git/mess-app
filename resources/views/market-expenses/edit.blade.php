@@ -21,9 +21,9 @@
                 <label for="user_id" class="form-label">User</label>
                 <select name="user_id" id="user_id" required @disabled($users->isEmpty())
                         class="form-control @error('user_id') form-control-invalid @enderror">
-                    <option value="" disabled {{ old('user_id', $expense->user_id) ? '' : 'selected' }}>Select user…</option>
+                    <option value="" selected>Select User</option>
                     @foreach ($users as $user)
-                        <option value="{{ $user->id }}" @selected((string) old('user_id', $expense->user_id) === (string) $user->id)>{{ $user->name }}</option>
+                        <option value="{{ $user->id }}">{{ $user->name }}</option>
                     @endforeach
                 </select>
                 @error('user_id')

@@ -2,85 +2,101 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\HandlesControllerErrors;
 use App\Models\AdvancePayment;
 use App\Models\MarketExpense;
 use App\Models\Meal;
 use App\Models\User;
+use App\Support\Money;
+use App\Support\Month;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Throwable;
 
 class DashboardController extends Controller
 {
-    public function index(): View
+    use HandlesControllerErrors;
+
+    public function index(Request $request): View|RedirectResponse
     {
-        $month = request('month', date('Y-m'));
+        try {
+            [$month, $year, $monthNum] = Month::normalize($request->input('month'));
 
-        if (! is_string($month) || ! preg_match('/^\d{4}-\d{2}$/', $month)) {
-            $month = date('Y-m');
+            $totalExpenseCents = (int) (MarketExpense::query()
+                ->whereYear('date', $year)
+                ->whereMonth('date', $monthNum)
+                ->selectRaw('COALESCE(SUM(amount * 100), 0) as cents')
+                ->value('cents') ?? 0);
+
+            $totalMeals = (int) (Meal::query()
+                ->whereYear('date', $year)
+                ->whereMonth('date', $monthNum)
+                ->selectRaw(
+                    'SUM(CASE WHEN lunch THEN 1 ELSE 0 END + CASE WHEN dinner THEN 1 ELSE 0 END) as meal_units'
+                )
+                ->value('meal_units') ?? 0);
+
+            $totalAdvanceCents = (int) (AdvancePayment::query()
+                ->whereYear('date', $year)
+                ->whereMonth('date', $monthNum)
+                ->selectRaw('COALESCE(SUM(amount * 100), 0) as cents')
+                ->value('cents') ?? 0);
+
+            $costPerMealCents = Money::roundDivToCents($totalExpenseCents, $totalMeals);
+
+            $mealUnitsByUser = Meal::query()
+                ->whereYear('date', $year)
+                ->whereMonth('date', $monthNum)
+                ->groupBy('user_id')
+                ->selectRaw(
+                    'user_id, SUM(CASE WHEN lunch THEN 1 ELSE 0 END + CASE WHEN dinner THEN 1 ELSE 0 END) as units'
+                )
+                ->pluck('units', 'user_id');
+
+            $advanceByUser = AdvancePayment::query()
+                ->whereYear('date', $year)
+                ->whereMonth('date', $monthNum)
+                ->groupBy('user_id')
+                ->selectRaw('user_id, COALESCE(SUM(amount * 100), 0) as cents')
+                ->pluck('cents', 'user_id');
+
+            $users = User::query()->orderBy('name')->get();
+            if ($users->isEmpty()) {
+                $this->logMissingData('dashboard.missing_users', ['month' => $month]);
+            }
+
+            $perUserBalances = $users->map(function (User $user) use ($costPerMealCents, $mealUnitsByUser, $advanceByUser) {
+                    $meals = (int) ($mealUnitsByUser->get($user->id, 0));
+                    $advancePaidCents = (int) ($advanceByUser->get($user->id, 0));
+                    $costCents = $meals * $costPerMealCents;
+                    $balanceCents = $advancePaidCents - $costCents;
+
+                    return [
+                        'name' => $user->name,
+                        'meals' => $meals,
+                        'advancePaid' => Money::centsToString($advancePaidCents),
+                        'cost' => Money::centsToString($costCents),
+                        'balance' => Money::centsToString($balanceCents),
+                        'balanceCents' => $balanceCents,
+                    ];
+                });
+
+            return view('dashboard', [
+                'totalExpense' => Money::centsToString($totalExpenseCents),
+                'totalMeals' => $totalMeals,
+                'totalAdvance' => Money::centsToString($totalAdvanceCents),
+                'costPerMeal' => Money::centsToString($costPerMealCents),
+                'perUserBalances' => $perUserBalances,
+                'month' => $month,
+                'monthLabel' => date('F Y', strtotime($month.'-01')),
+            ]);
+        } catch (Throwable $e) {
+            $this->logControllerError($e, 'dashboard.calculation_failed', [
+                'month' => $request->input('month'),
+            ]);
+
+            return $this->errorResponse($request, 'dashboard');
         }
-
-        [$year, $monthNum] = array_map('intval', explode('-', $month, 2));
-        if (! checkdate($monthNum, 1, $year)) {
-            $month = date('Y-m');
-        }
-
-        $start = $month.'-01';
-        $end = date('Y-m-t', strtotime($start));
-
-        $totalExpense = round((float) MarketExpense::query()
-            ->whereBetween('date', [$start, $end])
-            ->sum('amount'), 2);
-
-        $totalMeals = (int) (Meal::query()
-            ->whereBetween('date', [$start, $end])
-            ->selectRaw(
-                'SUM(CASE WHEN lunch THEN 1 ELSE 0 END + CASE WHEN dinner THEN 1 ELSE 0 END) as meal_units'
-            )
-            ->value('meal_units') ?? 0);
-
-        $costPerMealRatio = $totalMeals > 0 ? $totalExpense / $totalMeals : null;
-        $costPerMeal = $costPerMealRatio !== null ? round($costPerMealRatio, 2) : null;
-
-        $advancePaidByUserId = AdvancePayment::query()
-            ->whereBetween('date', [$start, $end])
-            ->selectRaw('user_id, SUM(amount) as total_advance')
-            ->groupBy('user_id')
-            ->pluck('total_advance', 'user_id');
-
-        $mealsByUserId = Meal::query()
-            ->whereBetween('date', [$start, $end])
-            ->selectRaw(
-                'user_id, SUM(CASE WHEN lunch THEN 1 ELSE 0 END + CASE WHEN dinner THEN 1 ELSE 0 END) as units'
-            )
-            ->groupBy('user_id')
-            ->pluck('units', 'user_id');
-
-        $perUserBalances = User::query()
-            ->orderBy('name')
-            ->get()
-            ->map(function (User $user) use ($costPerMealRatio, $advancePaidByUserId, $mealsByUserId) {
-                $meals = (int) ($mealsByUserId[$user->id] ?? 0);
-                $advancePaid = round((float) ($advancePaidByUserId[$user->id] ?? 0), 2);
-                $cost = $costPerMealRatio !== null
-                    ? round($meals * $costPerMealRatio, 2)
-                    : 0.0;
-                $balance = round($advancePaid - $cost, 2);
-
-                return [
-                    'name' => $user->name,
-                    'meals' => $meals,
-                    'advancePaid' => $advancePaid,
-                    'cost' => $cost,
-                    'balance' => $balance,
-                ];
-            });
-
-        return view('dashboard', [
-            'totalExpense' => $totalExpense,
-            'totalMeals' => $totalMeals,
-            'costPerMeal' => $costPerMeal,
-            'perUserBalances' => $perUserBalances,
-            'month' => $month,
-            'monthLabel' => date('F Y', strtotime($start)),
-        ]);
     }
 }

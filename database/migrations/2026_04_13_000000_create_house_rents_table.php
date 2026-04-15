@@ -13,13 +13,13 @@ return new class extends Migration
     {
         Schema::create('house_rents', function (Blueprint $table) {
             $table->id();
-            // int unsigned matches this app’s existing users.id / child tables (e.g. market_expenses).
-            $table->unsignedInteger('user_id');
-            $table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete();
-            $table->decimal('amount', 12, 2);
+            $table->unsignedBigInteger('user_id');
+            $table->decimal('amount', 10, 2);
             $table->string('month', 7);
             $table->text('note')->nullable();
             $table->timestamps();
+
+            $table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete();
         });
     }
 

@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\FiltersByMonth;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Meal extends Model
 {
+    use FiltersByMonth;
+
     /**
      * @var list<string>
      */

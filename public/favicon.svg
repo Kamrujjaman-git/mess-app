@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Mess App">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0EA5E9"/>
+      <stop offset="1" stop-color="#22C55E"/>
+    </linearGradient>
+    <linearGradient id="plate" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.98"/>
+      <stop offset="1" stop-color="#E2E8F0" stop-opacity="0.98"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Rounded square background -->
+  <rect x="4" y="4" width="56" height="56" rx="14" fill="url(#bg)"/>
+
+  <!-- Bowl / plate -->
+  <path d="M18 33c0 9 6.7 16 14 16s14-7 14-16H18z" fill="url(#plate)"/>
+  <ellipse cx="32" cy="33" rx="16" ry="6.5" fill="#F8FAFC" opacity="0.95"/>
+  <ellipse cx="32" cy="34" rx="13" ry="4.8" fill="#E2E8F0" opacity="0.85"/>
+
+  <!-- Steam -->
+  <path d="M26 18c-2 2-2 4 0 6" fill="none" stroke="#F8FAFC" stroke-width="3" stroke-linecap="round" opacity="0.95"/>
+  <path d="M32 16c-2.2 2.2-2.2 4.4 0 6.6" fill="none" stroke="#F8FAFC" stroke-width="3" stroke-linecap="round" opacity="0.95"/>
+  <path d="M38 18c-2 2-2 4 0 6" fill="none" stroke="#F8FAFC" stroke-width="3" stroke-linecap="round" opacity="0.95"/>
+
+  <!-- Simple spoon -->
+  <path d="M46.5 29c2.2-2.2 5.2-2.3 6.7-.8s1.4 4.5-.8 6.7l-8.6 8.6c-.5.5-1.2.5-1.7 0l-.6-.6c-.5-.5-.5-1.2 0-1.7L46.5 29z"
+        fill="#0F172A" opacity="0.22"/>
+</svg>

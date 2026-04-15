@@ -2,114 +2,154 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\HandlesControllerErrors;
 use App\Models\AdvancePayment;
 use App\Models\HouseRent;
 use App\Models\MaidBill;
 use App\Models\MarketExpense;
 use App\Models\Meal;
 use App\Models\User;
+use App\Support\Money;
+use App\Support\Month;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Throwable;
 
 class MonthlySummaryController extends Controller
 {
-    public function index(Request $request): View
+    use HandlesControllerErrors;
+
+    public function index(Request $request): View|RedirectResponse
     {
-        $month = $request->input('month', date('Y-m'));
+        try {
+            [$month, $year, $monthNum] = Month::normalize($request->input('month'));
 
-        if (! is_string($month) || ! preg_match('/^\d{4}-\d{2}$/', $month)) {
-            $month = date('Y-m');
+            $startDate = $month.'-01';
+
+            $totalExpenseCents = (int) (MarketExpense::query()
+                ->whereYear('date', $year)
+                ->whereMonth('date', $monthNum)
+                ->selectRaw('COALESCE(SUM(amount * 100), 0) as cents')
+                ->value('cents') ?? 0);
+
+            $totalMeals = (int) (Meal::query()
+                ->whereYear('date', $year)
+                ->whereMonth('date', $monthNum)
+                ->selectRaw(
+                    'SUM(CASE WHEN lunch THEN 1 ELSE 0 END + CASE WHEN dinner THEN 1 ELSE 0 END) as meal_units'
+                )
+                ->value('meal_units') ?? 0);
+
+            $costPerMealCents = Money::roundDivToCents($totalExpenseCents, $totalMeals);
+
+            $totalMealsAll = 0;
+            $totalAdvanceAllCents = 0;
+            $totalMealCostAllCents = 0;
+            $totalMealBalanceAllCents = 0;
+            $totalRentAllCents = 0;
+            $totalMaidAllCents = 0;
+            $totalFinalBalanceAllCents = 0;
+
+            $mealUnitsByUser = Meal::query()
+                ->whereYear('date', $year)
+                ->whereMonth('date', $monthNum)
+                ->groupBy('user_id')
+                ->selectRaw(
+                    'user_id, SUM(CASE WHEN lunch THEN 1 ELSE 0 END + CASE WHEN dinner THEN 1 ELSE 0 END) as units'
+                )
+                ->pluck('units', 'user_id');
+
+            $advanceByUser = AdvancePayment::query()
+                ->whereYear('date', $year)
+                ->whereMonth('date', $monthNum)
+                ->groupBy('user_id')
+                ->selectRaw('user_id, COALESCE(SUM(amount * 100), 0) as cents')
+                ->pluck('cents', 'user_id');
+
+            $rentByUser = HouseRent::query()
+                ->where('month', $month)
+                ->groupBy('user_id')
+                ->selectRaw('user_id, COALESCE(SUM(amount * 100), 0) as cents')
+                ->pluck('cents', 'user_id');
+
+            $maidByUser = MaidBill::query()
+                ->where('month', $month)
+                ->groupBy('user_id')
+                ->selectRaw('user_id, COALESCE(SUM(amount * 100), 0) as cents')
+                ->pluck('cents', 'user_id');
+
+            $users = User::query()->orderBy('name')->get();
+            if ($users->isEmpty()) {
+                $this->logMissingData('monthly_summary.missing_users', ['month' => $month]);
+            }
+
+            $usersData = $users
+                ->map(function (User $user) use (
+                    $costPerMealCents,
+                    $mealUnitsByUser,
+                    $advanceByUser,
+                    $rentByUser,
+                    $maidByUser,
+                    &$totalMealsAll,
+                    &$totalAdvanceAllCents,
+                    &$totalMealCostAllCents,
+                    &$totalMealBalanceAllCents,
+                    &$totalRentAllCents,
+                    &$totalMaidAllCents,
+                    &$totalFinalBalanceAllCents
+                ) {
+                    $userMeals = (int) ($mealUnitsByUser->get($user->id, 0));
+                    $advancePaidCents = (int) ($advanceByUser->get($user->id, 0));
+                    $mealCostCents = $userMeals * $costPerMealCents;
+                    $mealBalanceCents = $advancePaidCents - $mealCostCents;
+                    $rentCents = (int) ($rentByUser->get($user->id, 0));
+                    $maidCents = (int) ($maidByUser->get($user->id, 0));
+                    $finalBalanceCents = $mealBalanceCents - $rentCents - $maidCents;
+
+                    $totalMealsAll += $userMeals;
+                    $totalAdvanceAllCents += $advancePaidCents;
+                    $totalMealCostAllCents += $mealCostCents;
+                    $totalMealBalanceAllCents += $mealBalanceCents;
+                    $totalRentAllCents += $rentCents;
+                    $totalMaidAllCents += $maidCents;
+                    $totalFinalBalanceAllCents += $finalBalanceCents;
+
+                    return [
+                        'name' => $user->name,
+                        'totalMeals' => $userMeals,
+                        'advancePaid' => Money::centsToString($advancePaidCents),
+                        'mealCost' => Money::centsToString($mealCostCents),
+                        'mealBalance' => Money::centsToString($mealBalanceCents),
+                        'rent' => Money::centsToString($rentCents),
+                        'maid' => Money::centsToString($maidCents),
+                        'finalBalance' => Money::centsToString($finalBalanceCents),
+                        'mealBalanceCents' => $mealBalanceCents,
+                        'finalBalanceCents' => $finalBalanceCents,
+                    ];
+                });
+
+            return view('monthly-summary.index', [
+                'totalExpense' => Money::centsToString($totalExpenseCents),
+                'totalMeals' => $totalMeals,
+                'costPerMeal' => Money::centsToString($costPerMealCents),
+                'usersData' => $usersData,
+                'month' => $month,
+                'monthLabel' => date('F Y', strtotime($startDate)),
+                'totalMealsAll' => $totalMealsAll,
+                'totalAdvanceAll' => Money::centsToString($totalAdvanceAllCents),
+                'totalMealCostAll' => Money::centsToString($totalMealCostAllCents),
+                'totalMealBalanceAll' => Money::centsToString($totalMealBalanceAllCents),
+                'totalRentAll' => Money::centsToString($totalRentAllCents),
+                'totalMaidAll' => Money::centsToString($totalMaidAllCents),
+                'totalFinalBalanceAll' => Money::centsToString($totalFinalBalanceAllCents),
+            ]);
+        } catch (Throwable $e) {
+            $this->logControllerError($e, 'monthly_summary.calculation_failed', [
+                'month' => $request->input('month'),
+            ]);
+
+            return $this->errorResponse($request, 'monthly-summary.index');
         }
-
-        [$year, $monthNum] = array_map('intval', explode('-', $month, 2));
-        if (! checkdate($monthNum, 1, $year)) {
-            $month = date('Y-m');
-        }
-
-        $startDate = $month.'-01';
-        $endDate = date('Y-m-t', strtotime($startDate));
-
-        $totalExpense = round((float) MarketExpense::query()
-            ->whereBetween('date', [$startDate, $endDate])
-            ->sum('amount'), 2);
-
-        $totalMeals = (int) (Meal::query()
-            ->whereBetween('date', [$startDate, $endDate])
-            ->selectRaw(
-                'SUM(CASE WHEN lunch THEN 1 ELSE 0 END + CASE WHEN dinner THEN 1 ELSE 0 END) as meal_units'
-            )
-            ->value('meal_units') ?? 0);
-
-        $costPerMealRatio = $totalMeals > 0 ? $totalExpense / $totalMeals : null;
-        $costPerMeal = $costPerMealRatio !== null ? round($costPerMealRatio, 2) : null;
-
-        $advancePaidByUserId = AdvancePayment::query()
-            ->whereBetween('date', [$startDate, $endDate])
-            ->selectRaw('user_id, SUM(amount) as total_advance')
-            ->groupBy('user_id')
-            ->pluck('total_advance', 'user_id');
-
-        $mealsByUserId = Meal::query()
-            ->whereBetween('date', [$startDate, $endDate])
-            ->selectRaw(
-                'user_id, SUM(CASE WHEN lunch THEN 1 ELSE 0 END + CASE WHEN dinner THEN 1 ELSE 0 END) as units'
-            )
-            ->groupBy('user_id')
-            ->pluck('units', 'user_id');
-
-        $rentByUserId = HouseRent::query()
-            ->where('month', $month)
-            ->selectRaw('user_id, SUM(amount) as total_rent')
-            ->groupBy('user_id')
-            ->pluck('total_rent', 'user_id');
-
-        $maidByUserId = MaidBill::query()
-            ->where('month', $month)
-            ->selectRaw('user_id, SUM(amount) as total_maid')
-            ->groupBy('user_id')
-            ->pluck('total_maid', 'user_id');
-
-        $usersData = User::query()
-            ->orderBy('name')
-            ->get()
-            ->map(function (User $user) use (
-                $costPerMealRatio,
-                $advancePaidByUserId,
-                $mealsByUserId,
-                $rentByUserId,
-                $maidByUserId
-            ) {
-                $userMeals = (int) ($mealsByUserId[$user->id] ?? 0);
-                $advancePaid = round((float) ($advancePaidByUserId[$user->id] ?? 0), 2);
-                $mealCost = $costPerMealRatio !== null
-                    ? round($userMeals * $costPerMealRatio, 2)
-                    : 0.0;
-                $mealBalance = round($advancePaid - $mealCost, 2);
-
-                $rent = round((float) ($rentByUserId[$user->id] ?? 0), 2);
-                $maid = round((float) ($maidByUserId[$user->id] ?? 0), 2);
-
-                $finalBalance = round($mealBalance - $rent - $maid, 2);
-
-                return [
-                    'name' => $user->name,
-                    'totalMeals' => $userMeals,
-                    'advancePaid' => $advancePaid,
-                    'mealCost' => $mealCost,
-                    'mealBalance' => $mealBalance,
-                    'rent' => $rent,
-                    'maid' => $maid,
-                    'finalBalance' => $finalBalance,
-                ];
-            });
-
-        return view('monthly-summary.index', [
-            'totalExpense' => $totalExpense,
-            'totalMeals' => $totalMeals,
-            'costPerMeal' => $costPerMeal,
-            'usersData' => $usersData,
-            'month' => $month,
-            'monthLabel' => date('F Y', strtotime($startDate)),
-        ]);
     }
 }

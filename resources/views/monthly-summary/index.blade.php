@@ -21,7 +21,7 @@
                 </p>
             </div>
             <div class="flex shrink-0 flex-col items-stretch gap-3 sm:flex-row sm:items-center lg:flex-col lg:items-end">
-                <div class="inline-flex items-center gap-2 rounded-2xl border border-indigo-200/80 bg-white/90 px-4 py-2.5 text-sm font-semibold text-indigo-950 shadow-sm ring-1 ring-indigo-100/80 backdrop-blur-sm">
+                <div class="inline-flex items-center gap-2 rounded-xl border border-indigo-200/80 bg-white/90 px-4 py-2.5 text-sm font-semibold text-indigo-950 shadow-sm ring-1 ring-indigo-100/80 backdrop-blur-sm">
                     <span class="flex size-9 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-inner shadow-indigo-900/20" aria-hidden="true">
                         <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
@@ -40,7 +40,7 @@
     </header>
 
     {{-- Period control --}}
-    <div class="border-b border-slate-200/80 bg-slate-50/40 px-6 py-5 sm:px-10">
+    <div class="border-b border-slate-200/80 bg-gray-50 px-6 py-5 sm:px-10">
         <form method="get"
               action="{{ route('monthly-summary.index') }}"
               class="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
@@ -71,7 +71,7 @@
                 <div class="min-w-0">
                     <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total expense</p>
                     <p class="mt-3 text-3xl font-bold tabular-nums tracking-tight text-slate-900 sm:text-4xl">
-                        {{ number_format($totalExpense, 2) }}
+                        {{ $totalExpense }}
                     </p>
                     <p class="mt-2 text-xs text-slate-500">All market purchases in this month</p>
                 </div>
@@ -88,7 +88,7 @@
                 <div class="min-w-0">
                     <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total meals</p>
                     <p class="mt-3 text-3xl font-bold tabular-nums tracking-tight text-slate-900 sm:text-4xl">
-                        {{ number_format($totalMeals) }}
+                        {{ number_format($totalMeals, 0) }}
                     </p>
                     <p class="mt-2 text-xs text-slate-500">Lunch and dinner units counted</p>
                 </div>
@@ -106,7 +106,7 @@
                     <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Cost per meal</p>
                     <p class="mt-3 text-3xl font-bold tabular-nums tracking-tight text-slate-900 sm:text-4xl">
                         @if ($costPerMeal !== null)
-                            {{ number_format($costPerMeal, 2) }}
+                            {{ $costPerMeal }}
                         @else
                             <span class="text-slate-400">—</span>
                         @endif
@@ -139,7 +139,7 @@
 
         @if ($usersData->isEmpty())
             <div class="empty-panel mt-8 flex flex-col items-center gap-3 text-center">
-                <span class="flex size-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400 ring-1 ring-slate-200/80" aria-hidden="true">
+                <span class="flex size-14 items-center justify-center rounded-xl bg-gray-100 text-slate-400 ring-1 ring-slate-200/80" aria-hidden="true">
                     <svg class="size-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
                     </svg>
@@ -147,13 +147,13 @@
                 <p>No members to show yet.</p>
             </div>
         @else
-            <div class="mt-8 overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-md shadow-slate-200/30 ring-1 ring-slate-900/[0.03]">
+            <div class="mt-8 overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-sm ring-1 ring-slate-900/[0.03]">
                 <div class="overflow-x-auto">
                     <table class="min-w-[760px] border-collapse text-left text-sm md:min-w-full"
                            aria-describedby="summary-members-desc">
                         <thead>
-                            <tr class="border-b border-slate-200 bg-slate-100/90">
-                                <th scope="col" class="sticky left-0 z-10 whitespace-nowrap bg-slate-100/90 px-4 py-4 text-xs font-semibold uppercase tracking-wider text-slate-600 shadow-[6px_0_12px_-8px_rgba(15,23,42,0.25)] md:static md:bg-transparent md:px-6 md:py-4 md:shadow-none">Name</th>
+                            <tr class="border-b border-slate-200 bg-gray-100">
+                                <th scope="col" class="sticky left-0 z-10 whitespace-nowrap bg-gray-100 px-4 py-4 text-xs font-semibold uppercase tracking-wider text-slate-600 shadow-[6px_0_12px_-8px_rgba(15,23,42,0.25)] md:static md:bg-transparent md:px-6 md:py-4 md:shadow-none">Name</th>
                                 <th scope="col" class="whitespace-nowrap px-4 py-4 text-right text-xs font-semibold uppercase tracking-wider text-slate-600 md:px-6">Meals</th>
                                 <th scope="col" class="whitespace-nowrap px-4 py-4 text-right text-xs font-semibold uppercase tracking-wider text-slate-600 md:px-6">Advance</th>
                                 <th scope="col" class="whitespace-nowrap px-4 py-4 text-right text-xs font-semibold uppercase tracking-wider text-slate-600 md:px-6">Meal cost</th>
@@ -166,45 +166,54 @@
                         <tbody class="divide-y divide-slate-100">
                             @foreach ($usersData as $row)
                                 @php
-                                    $mealBal = (float) $row['mealBalance'];
-                                    $finalBal = (float) $row['finalBalance'];
+                                    $mealBalCents = (int) $row['mealBalanceCents'];
+                                    $finalBalCents = (int) $row['finalBalanceCents'];
                                 @endphp
                                 <tr class="group table-row-interactive">
                                     <th scope="row" class="sticky left-0 z-10 whitespace-nowrap bg-white px-4 py-4 text-left text-sm font-semibold text-slate-900 shadow-[6px_0_12px_-8px_rgba(15,23,42,0.12)] group-hover:bg-indigo-50/55 md:static md:bg-transparent md:px-6 md:py-5 md:shadow-none md:group-hover:bg-transparent">
                                         {{ $row['name'] }}
                                     </th>
-                                    <td class="px-4 py-4 text-right tabular-nums text-slate-600 md:px-6 md:py-5">{{ number_format($row['totalMeals']) }}</td>
-                                    <td class="px-4 py-4 text-right tabular-nums text-slate-900 md:px-6 md:py-5">{{ number_format($row['advancePaid'], 2) }}</td>
-                                    <td class="px-4 py-4 text-right tabular-nums text-slate-900 md:px-6 md:py-5">{{ number_format($row['mealCost'], 2) }}</td>
+                                    <td class="px-4 py-4 text-right tabular-nums text-slate-600 md:px-6 md:py-5">{{ number_format($row['totalMeals'], 0) }}</td>
+                                    <td class="px-4 py-4 text-right tabular-nums text-slate-900 md:px-6 md:py-5">{{ $row['advancePaid'] }}</td>
+                                    <td class="px-4 py-4 text-right tabular-nums text-slate-900 md:px-6 md:py-5">{{ $row['mealCost'] }}</td>
                                     <td class="px-4 py-4 text-right align-middle md:px-6 md:py-5">
-                                        @if ($mealBal > 0)
-                                            <span class="tabular-nums font-semibold text-emerald-700">{{ number_format($row['mealBalance'], 2) }}</span>
-                                        @elseif ($mealBal < 0)
-                                            <span class="tabular-nums font-semibold text-red-600">{{ number_format($row['mealBalance'], 2) }}</span>
+                                        @if ($mealBalCents > 0)
+                                            <span class="tabular-nums font-semibold text-emerald-700">{{ $row['mealBalance'] }}</span>
+                                        @elseif ($mealBalCents < 0)
+                                            <span class="tabular-nums font-semibold text-red-600">{{ $row['mealBalance'] }}</span>
                                         @else
-                                            <span class="tabular-nums font-medium text-slate-500">{{ number_format($row['mealBalance'], 2) }}</span>
+                                            <span class="tabular-nums font-medium text-slate-500">{{ $row['mealBalance'] }}</span>
                                         @endif
                                     </td>
-                                    <td class="px-4 py-4 text-right tabular-nums text-slate-700 md:px-6 md:py-5">{{ number_format($row['rent'], 2) }}</td>
-                                    <td class="px-4 py-4 text-right tabular-nums text-slate-700 md:px-6 md:py-5">{{ number_format($row['maid'], 2) }}</td>
+                                    <td class="px-4 py-4 text-right tabular-nums text-slate-700 md:px-6 md:py-5">{{ $row['rent'] }}</td>
+                                    <td class="px-4 py-4 text-right tabular-nums text-slate-700 md:px-6 md:py-5">{{ $row['maid'] }}</td>
                                     <td class="px-4 py-4 text-right align-middle md:px-6 md:py-5">
-                                        @if ($finalBal > 0)
+                                        @if ($finalBalCents >= 0)
                                             <div class="ml-auto inline-block max-w-[12rem] rounded-xl bg-emerald-50 px-3 py-2 text-right ring-1 ring-emerald-200/80">
-                                                <div class="tabular-nums text-base font-semibold text-emerald-900">{{ number_format($row['finalBalance'], 2) }}</div>
-                                                <div class="mt-0.5 text-[0.65rem] font-semibold uppercase tracking-wide text-emerald-700">Will get money</div>
-                                            </div>
-                                        @elseif ($finalBal < 0)
-                                            <div class="ml-auto inline-block max-w-[12rem] rounded-xl bg-red-50 px-3 py-2 text-right ring-1 ring-red-200/80">
-                                                <div class="tabular-nums text-base font-semibold text-red-900">{{ number_format($row['finalBalance'], 2) }}</div>
-                                                <div class="mt-0.5 text-[0.65rem] font-semibold uppercase tracking-wide text-red-700">Needs to pay</div>
+                                                <div class="tabular-nums text-base font-semibold text-emerald-900">{{ $row['finalBalance'] }}</div>
                                             </div>
                                         @else
-                                            <span class="tabular-nums font-medium text-slate-600">{{ number_format($row['finalBalance'], 2) }}</span>
+                                            <div class="ml-auto inline-block max-w-[12rem] rounded-xl bg-red-50 px-3 py-2 text-right ring-1 ring-red-200/80">
+                                                <div class="tabular-nums text-base font-semibold text-red-900">{{ $row['finalBalance'] }}</div>
+                                                <div class="mt-0.5 text-[0.65rem] font-semibold uppercase tracking-wide text-red-700">Needs to Pay</div>
+                                            </div>
                                         @endif
                                     </td>
                                 </tr>
                             @endforeach
                         </tbody>
+                        <tfoot>
+                            <tr class="bg-gray-100 font-bold">
+                                <td class="sticky left-0 z-10 whitespace-nowrap bg-gray-100 px-4 py-4 text-left text-sm text-slate-900 shadow-[6px_0_12px_-8px_rgba(15,23,42,0.12)] md:static md:px-6 md:py-5 md:shadow-none">TOTAL</td>
+                                <td class="px-4 py-4 text-right tabular-nums text-slate-900 md:px-6 md:py-5">{{ number_format($totalMealsAll, 0) }}</td>
+                                <td class="px-4 py-4 text-right tabular-nums text-slate-900 md:px-6 md:py-5">{{ $totalAdvanceAll }}</td>
+                                <td class="px-4 py-4 text-right tabular-nums text-slate-900 md:px-6 md:py-5">{{ $totalMealCostAll }}</td>
+                                <td class="px-4 py-4 text-right tabular-nums text-slate-900 md:px-6 md:py-5">{{ $totalMealBalanceAll }}</td>
+                                <td class="px-4 py-4 text-right tabular-nums text-slate-900 md:px-6 md:py-5">{{ $totalRentAll }}</td>
+                                <td class="px-4 py-4 text-right tabular-nums text-slate-900 md:px-6 md:py-5">{{ $totalMaidAll }}</td>
+                                <td class="px-4 py-4 text-right tabular-nums text-slate-900 md:px-6 md:py-5">{{ $totalFinalBalanceAll }}</td>
+                            </tr>
+                        </tfoot>
                     </table>
                 </div>
             </div>

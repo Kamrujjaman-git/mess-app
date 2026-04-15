@@ -2,15 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\HandlesControllerErrors;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use Throwable;
 
 class UserController extends Controller
 {
+    use HandlesControllerErrors;
+
     /** @return list<string> */
     private static function allowedRoles(): array
     {
@@ -32,13 +36,21 @@ class UserController extends Controller
      */
     public function index(Request $request): JsonResponse|View
     {
-        $users = User::query()->orderBy('name')->orderBy('id')->get();
+        try {
+            $users = User::query()->orderBy('name')->orderBy('id')->get();
+            if ($users->isEmpty()) {
+                $this->logMissingData('users.index_missing_data');
+            }
 
-        if ($request->wantsJson()) {
-            return response()->json($users);
+            if ($request->wantsJson()) {
+                return response()->json($users);
+            }
+
+            return view('users.index', compact('users'));
+        } catch (Throwable $e) {
+            $this->logControllerError($e, 'users.index_failed');
+            return $this->errorResponse($request, 'dashboard');
         }
-
-        return view('users.index', compact('users'));
     }
 
     /**
@@ -46,19 +58,26 @@ class UserController extends Controller
      */
     public function store(Request $request): JsonResponse|RedirectResponse
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'role' => ['required', 'string', Rule::in(self::allowedRoles())],
-        ]);
+        try {
+            $validated = $request->validate([
+                'name' => ['required', 'string', 'max:255'],
+                'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+                'role' => ['required', 'string', Rule::in(self::allowedRoles())],
+            ]);
 
-        $user = User::create($validated);
+            $user = User::create($validated);
 
-        if ($request->wantsJson()) {
-            return response()->json($user, 201);
+            if ($request->wantsJson()) {
+                return response()->json($user, 201);
+            }
+
+            return redirect()->route('dashboard')->with('success', 'User created successfully.');
+        } catch (Throwable $e) {
+            $this->logControllerError($e, 'users.insert_failed', [
+                'email' => $request->input('email'),
+            ]);
+            return $this->errorResponse($request, 'users.index');
         }
-
-        return redirect()->route('dashboard')->with('success', 'User created successfully.');
     }
 
     /**
@@ -74,19 +93,26 @@ class UserController extends Controller
      */
     public function update(Request $request, User $user): JsonResponse|RedirectResponse
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
-            'role' => ['required', 'string', Rule::in(self::allowedRoles())],
-        ]);
+        try {
+            $validated = $request->validate([
+                'name' => ['required', 'string', 'max:255'],
+                'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
+                'role' => ['required', 'string', Rule::in(self::allowedRoles())],
+            ]);
 
-        $user->update($validated);
+            $user->update($validated);
 
-        if ($request->wantsJson()) {
-            return response()->json($user->fresh());
+            if ($request->wantsJson()) {
+                return response()->json($user->fresh());
+            }
+
+            return redirect()->route('users.index')->with('success', 'User updated successfully.');
+        } catch (Throwable $e) {
+            $this->logControllerError($e, 'users.update_failed', [
+                'id' => $user->id,
+            ]);
+            return $this->errorResponse($request, 'users.index');
         }
-
-        return redirect()->route('users.index')->with('success', 'User updated successfully.');
     }
 
     /**
@@ -94,12 +120,19 @@ class UserController extends Controller
      */
     public function destroy(Request $request, User $user): JsonResponse|RedirectResponse
     {
-        $user->delete();
+        try {
+            $user->delete();
 
-        if ($request->wantsJson()) {
-            return response()->json(null, 204);
+            if ($request->wantsJson()) {
+                return response()->json(null, 204);
+            }
+
+            return redirect()->route('users.index')->with('success', 'User deleted successfully.');
+        } catch (Throwable $e) {
+            $this->logControllerError($e, 'users.delete_failed', [
+                'id' => $user->id,
+            ]);
+            return $this->errorResponse($request, 'users.index');
         }
-
-        return redirect()->route('users.index')->with('success', 'User deleted successfully.');
     }
 }
